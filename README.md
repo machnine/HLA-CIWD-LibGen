@@ -1,6 +1,6 @@
 # HLA CWD Library Generator
 
-This project downloads the latest hla.xml.zip file, and generates a JSON or XML file with CWD (CIWD) alleles.
+This project downloads the latest hla.xml.zip file from the [IMGT HLA GitHub repository](https://github.com/ANHIG/IMGTHLA) and generates a JSON or XML file with CWD (CIWD) alleles.
 
 ## Structure
 
