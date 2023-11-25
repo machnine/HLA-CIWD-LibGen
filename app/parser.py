@@ -1,17 +1,23 @@
 """This module is used to parse the hla.xml file """
 from xml.etree import ElementTree as ET
-from tqdm import tqdm
 
 
 class HlaXmlParser:
-    """Parse the hla.xml file and extract the hla alleles and allele attributes."""
+    """Parser class"""
 
-    def __init__(self, hla_xml_file):
-        """Initialize the parser with the hla.xml file and settings file."""
+    def __init__(self, hla_xml_file, namespace=None):
         self.hla_xml_file = hla_xml_file
-        self.namespace = {"hla": "http://hla.alleles.org/xml"}
-        root = ET.parse(self.hla_xml_file).getroot()
-        self.alleles = root.findall("hla:allele", self.namespace)
+        self.namespace = namespace or {"hla": "http://hla.alleles.org/xml"}
+        self.parsed_data = None
+        self._root = None
+
+    def parse_xml(self):
+        """Parse the hla.xml file to self._root"""
+        try:
+            tree = ET.parse(self.hla_xml_file)
+            self._root = tree.getroot()
+        except ET.ParseError as e:
+            raise ValueError(f"Error parsing XML: {e}")
 
     def get_allele_id_names(self, allele):
         """Get the allele id and name."""
@@ -33,9 +39,18 @@ class HlaXmlParser:
 
     @property
     def cwd_alleles(self):
-        """Parse the hla.xml file and return a dictionary of alleles and their attributes."""
+        """parsed data"""
+        if self.parsed_data is None:
+            if self._root is None:
+                self.parse_xml()
+            self.parsed_data = self._parse_alleles()
+        return self.parsed_data
+
+    def _parse_alleles(self):
+        """data parsing helper function"""
         cwd_alleles = {}
-        for allele in tqdm(self.alleles, desc="Parsing alleles in hla.xml"):
+        alleles = self._root.findall("hla:allele", self.namespace)
+        for allele in alleles:
             allele_id, allele_name = self.get_allele_id_names(allele)
             cwd = {}
             for catalogue in self.get_cwd_catalogues(allele):
@@ -43,16 +58,25 @@ class HlaXmlParser:
                     cwd.update(entries)
             if cwd:
                 cwd_alleles[allele_id] = {
-                    "name": allele_name[4:],
+                    "name": allele_name[4:],  # remove the "HLA-" prefix
                     **cwd,
-                }  # remove the "HLA-" prefix
+                }
         return cwd_alleles
 
     @property
     def release_version(self):
         """Get the release version of the hla.xml file."""
-        return (
-            self.alleles[0]
-            .find("hla:releaseversions", self.namespace)
-            .get("currentrelease")
-        )
+        if self._root is None:
+            self.parse_xml()
+
+        first_allele = self._root.find("hla:allele", self.namespace)
+        if first_allele is None:
+            raise ValueError("No 'allele' elements found in the XML file.")
+
+        release_versions_elem = first_allele.find("hla:releaseversions", self.namespace)
+        if release_versions_elem is None:
+            raise ValueError(
+                "Could not find 'releaseversions' element under the 'allele' element."
+            )
+
+        return release_versions_elem.get("currentrelease")

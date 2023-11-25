@@ -1,42 +1,57 @@
-"""This module downloads the latest hla.xml.zip file from the repository and unzips it."""
+"""This module downloads the latest hla.xml.zip file from the IMGT/HLA GitHub repository and unzips it."""
 import os
 import zipfile
+
 import requests
 from tqdm import tqdm
 
 
 class HlaXmlDownloader:
-    """This class handles the downloading and unzipping of the hla.xml.zip file."""
+    """Downloder class"""
 
     def __init__(
         self,
         url="https://github.com/ANHIG/IMGTHLA/raw/Latest/xml/hla.xml.zip",
+        filename="hla.xml.zip",
     ):
         self.url = url
-        self.block_size = 1024  # Set the  block size for downloading the file.
+        self.filename = filename
+        self.block_size = 1024
 
     def download_file(self):
-        """Download the latest hla.xml.zip file from the repository."""
-        print("Downloading the latest hla.xml.zip file from the repository...")
-        r = requests.get(self.url, stream=True, timeout=10)
-        total_size = int(r.headers.get("content-length", 0))
-        with open("hla.xml.zip", "wb") as f:
-            for data in tqdm(
-                r.iter_content(self.block_size),
-                total=total_size // self.block_size,
-                unit="KB",
-                unit_scale=True,
-            ):
-                f.write(data)
+        """Download the hla.xml.zip file"""
+        print(f"Downloading {self.filename} from {self.url} ...")
+        try:
+            r = requests.get(self.url, stream=True, timeout=10)
+            r.raise_for_status()
+            total_size = int(r.headers.get("content-length", 0))
+
+            with open(self.filename, "wb") as f, tqdm(
+                total=total_size, unit="B", unit_scale=True, desc=self.filename
+            ) as pbar:
+                for data in r.iter_content(self.block_size):
+                    f.write(data)
+                    pbar.update(len(data))
+        except requests.RequestException as e:
+            print(f"Error downloading file: {e}")
+            return False
+        return True
 
     def unzip_file(self):
         """Unzip the hla.xml.zip file."""
-        print("Unzipping the hla.xml.zip file...")
-        with zipfile.ZipFile("hla.xml.zip", "r") as zip_ref:
-            zip_ref.extract("hla.xml")
-        os.remove("hla.xml.zip")
+        try:
+            with zipfile.ZipFile(self.filename, "r") as zip_ref:
+                zip_ref.extract("hla.xml")
+            return True
+        except zipfile.BadZipFile as e:
+            print(f"Error unzipping file: {e}")
+            return False
 
     def run(self):
-        """Execute the download and unzip process."""
-        self.download_file()
-        self.unzip_file()
+        """Run the downloader."""
+        if self.download_file():
+            if self.unzip_file():
+                try:
+                    os.remove(self.filename)
+                except OSError as e:
+                    print(f"Error deleting file: {e}")
