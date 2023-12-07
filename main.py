@@ -23,6 +23,11 @@ argparser.add_argument(
 argparser.add_argument(
     "-f", "--format", choices=["json", "xml"], help="the output format (json or xml)"
 )
+argparser.add_argument(
+    "-v",
+    "--version",
+    help="the version of the IMGT/HLA library to download (default is 'Latest')",
+)
 
 if __name__ == "__main__":
     # Parse the arguments
@@ -34,7 +39,7 @@ if __name__ == "__main__":
     else:
         # If the download argument was provided, download the XML file
         if args.download:
-            d = HlaXmlDownloader()
+            d = HlaXmlDownloader(args.version) if args.version else HlaXmlDownloader()                        
             d.run()
 
         # Parse the XML file

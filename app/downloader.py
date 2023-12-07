@@ -11,10 +11,10 @@ class HlaXmlDownloader:
 
     def __init__(
         self,
-        url="https://github.com/ANHIG/IMGTHLA/raw/Latest/xml/hla.xml.zip",
+        version="Latest",
         filename="hla.xml.zip",
     ):
-        self.url = url
+        self.url = f"https://github.com/ANHIG/IMGTHLA/raw/{version}/xml/{filename}"
         self.filename = filename
         self.block_size = 1024
 

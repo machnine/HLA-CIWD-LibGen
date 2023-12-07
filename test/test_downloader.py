@@ -1,5 +1,6 @@
+"""Test downloader.py module."""
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from app.downloader import HlaXmlDownloader
 
 
